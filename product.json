@@ -1,0 +1,111 @@
+{
+"products": {
+        "clothes": [
+        {
+            "id": "111",
+            "prodName": "IMPERIAL Plaid Pocket Men Jacket",
+            "photo1": "images/shopping.webp",
+            "price": 450.04,
+            "description": "Stylish and comfortable plaid pocket"
+        },
+        {
+            "id": "112",
+            "prodName": "Offwhite Oversized Jacket",
+            "photo1": "images/shopping1.webp",
+            "price": 550.99,
+            "description": "Trendy offwhite oversized jacket"
+        },
+        {
+            "id": "113",
+            "prodName": "ZNontype Pocket Cargo Pants",
+            "photo1": "images/shopping2.webp",
+            "price": 350.75,
+            "description": "Durable and functional cargo pants"
+        },
+        {
+            "id": "114",
+            "prodName": "Fresco Change Pocket Navy T-shirt L",
+            "photo1": "images/shopping3.webp",
+            "price": 600.50,
+            "description": "Comfortable navy t-shirt with pocket"
+        },
+        {
+            "id": "115",
+            "prodName": "Shop Linea Dress Women's",
+            "photo1": "images/shopping4.webp",
+            "price": 750.20,
+            "description": "Elegant and stylish linea dress"
+        },
+        {
+            "id": "116",
+            "prodName": "Lilla P Shrunken V-Neck Cardigan",
+            "photo1": "images/shopping5.webp",
+            "price": 300.00,
+            "description": "Cozy and versatile v-neck cardigan"
+        },
+        {
+            "id": "117",
+            "prodName": "RLevi's western sherpa denim jacket",
+            "photo1": "images/shopping6.webp",
+            "price": 400.80,
+            "description": "Classic sherpa denim jacket"
+        },
+        {
+            "id": "118",
+            "prodName": "Nike Full-Zip Hoodie Jacket - Black",
+            "photo1": "images/shopping7.webp",
+            "price": 550.60,
+            "description": "Comfortable Black full-zip hoodie"
+        },
+        {
+            "id": "119",
+            "prodName": "WRug style LUXSTYLE long sleeve polo",
+            "photo1": "images/shopping8.webp",
+            "price": 620.30,
+            "description": "Stylish rug style outfit"
+        },
+        {
+            "id": "120",
+            "prodName": "Dyse One - Round Neck T-shirt",
+            "photo1": "images/shopping9.webp",
+            "price": 480.90,
+            "description": "Casual round neck t-shirt"
+        },
+        {
+            "id": "121",
+            "prodName": "AMen adidas EQT Crewneck Sweatshirt",
+            "photo1": "images/shopping10.webp",
+            "price": 700.00,
+            "description": "Reflective crewneck sweatshirt"
+        },
+        {
+            "id": "122",
+            "prodName": "Puma Embroidered Men Hoodie",
+            "photo1": "images/shopping11.webp",
+            "price": 530.40,
+            "description": "Comfortable embroidered hoodie"
+        },
+        {
+            "id": "123",
+            "prodName": "ZZara Man Basic Chino Pants",
+            "photo1": "images/shopping12.webp",
+            "price": 410.25,
+            "description": "Classic basic chino pants"
+        },
+        {
+            "id": "124",
+            "prodName": "H&M Slim Straight High Jeans",
+            "photo1": "images/shopping13.avif",
+            "price": 390.15,
+            "description": "Trendy slim fit jeans"
+        },
+        {
+            "id": "125",
+            "prodName": "New Balance Men's Woven Jacket",
+            "photo1": "images/shopping14.webp",
+            "price": 950.20,
+            "description": "Lightweight woven jacket"
+        }
+      ]
+    }
+}
