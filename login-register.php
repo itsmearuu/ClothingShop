@@ -2,8 +2,6 @@
 /**
  * LOGIN-REGISTER HANDLER
  * Handles user registration and login functionality
- * - Registration: Collects user data, validates email, initiates 2FA verification
- * - Login: Authenticates user credentials with brute force protection
  */
 
 require_once 'session.php';
@@ -12,11 +10,6 @@ require_once 'config.php';
 /**
  * REGISTRATION HANDLER
  * Processes user registration form submission
- * Steps:
- * 1. Collect form data (name, email, password, birthday, gender)
- * 2. Check if email already exists
- * 3. Generate verification code and send email
- * 4. Store pending registration in session for verification
  */
 if (isset($_POST['register'])) {
     // Retrieve registration form data

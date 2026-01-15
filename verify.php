@@ -2,12 +2,6 @@
 /**
  * EMAIL VERIFICATION PAGE - verify.php
  * Handles 2FA email verification during registration
- * Steps:
- * 1. Display verification form
- * 2. User enters 6-digit code received via email
- * 3. Code is validated against session data
- * 4. If valid, user data is inserted into database
- * 5. User redirected to login page
  */
 
 require_once 'session.php';
@@ -63,8 +57,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /**
      * CODE VERIFICATION HANDLER
-     * Validates the 6-digit code entered by user
-     * If valid and not expired, inserts user into database
      */
     $code = trim($_POST['code'] ?? '');
     if ($code === $pending['code'] && time() <= $pending['expires']) {

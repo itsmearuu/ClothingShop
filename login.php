@@ -2,11 +2,6 @@
 /**
  * LOGIN PAGE - login.php
  * Displays login and registration forms
- * Features:
- * - Login form with email/password
- * - Registration form with new user fields
- * - Error handling and form validation display
- * - Toggle between login and register forms
  */
 
 session_start();
@@ -35,10 +30,6 @@ function showError($error){
 
 /**
  * HELPER FUNCTION: isActiveForm()
- * Determines if a form tab should be displayed
- * @param string $formName - Name of the form (login or register)
- * @param string $activeform - Currently active form
- * @return string - 'active' class or empty string
  */
 function isActiveForm($formName, $activeform){
     return $formName === $activeform ? 'active' : '';
