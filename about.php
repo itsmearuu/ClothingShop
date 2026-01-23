@@ -21,12 +21,12 @@ require_once 'session.php';
 <body>
 
     <header>
-        <div class="mylogo" onclick="window.location.href='index.php'">CLOTHINGSHOP</div>
+        <div class="mylogo" onclick="window.location.href='index.php'">CLOTHING<span style="color: #ff9d00">SHOP</span></div>
         <nav>
-            <a href="index.php">HOME</a>
-            <a href="about.php">ABOUT</a>
-            <a href="products.php">PRODUCTS</a>
-            <a href="contact.php">CONTACT</a>
+            <a href="index.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'index.php') ? 'active' : ''; ?>">HOME</a>
+            <a href="about.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'about.php') ? 'active' : ''; ?>">ABOUT</a>
+            <a href="products.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'products.php') ? 'active' : ''; ?>">PRODUCTS</a>
+            <a href="contact.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'contact.php') ? 'active' : ''; ?>">CONTACT</a>
         </nav>
 
         <div class="logsign">
@@ -59,7 +59,7 @@ require_once 'session.php';
                 </div>
                 <div class="col-lg-6 about-image">
                     <div class="about-placeholder">
-                        <i class="fa-solid fa-shirt"></i>
+                        <img src="images/CSLogo.png" alt="ClothingShop" style="width: 100%; height: 100%; object-fit: contain;">
                     </div>
                 </div>
             </div>
@@ -145,7 +145,7 @@ require_once 'session.php';
         <section class="cta-section">
             <h2>Ready to Shop?</h2>
             <p>Explore our amazing collection of clothing and find your perfect style</p>
-            <a href="products.php" class="btn btn-primary btn-lg">Browse Our Products</a>
+            <a href="products.php" class="btn btn-light btn-lg">Browse Our Products</a>
         </section>
     </div>
 
@@ -154,7 +154,7 @@ require_once 'session.php';
         <div class="container">
             <div class="row">
                 <div class="col">
-                    <p class="Clo">CLOTHINGSHOP</p>
+                    <p class="Clo">CLOTHING<span style="color: #ff9d00">SHOP</span></p>
                     <p>Empowering customers with choice, confidence, and convenience—ClothingShop is your trusted destination for modern online shopping.</p>
                 </div>
                 <div class="col">
@@ -168,8 +168,7 @@ require_once 'session.php';
                 </div>
                 <div class="col">
                     <p class="Git">GET IN TOUCH</p>
-                    <p>+63 902 6488 930</p>
-                    <p>contact@ClothingShop.com</p>
+                    <p>+63 902 6488 930 <br> +63 915 6789 012 <br>contact@clothingshop.com<br>support@clothingshop.com</p>
                 </div>
             </div>
         </div>
@@ -201,7 +200,7 @@ require_once 'session.php';
             right: 30px;
             width: 50px;
             height: 50px;
-            background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+            background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
             color: #222831;
             border: none;
             border-radius: 50%;
@@ -214,7 +213,7 @@ require_once 'session.php';
         }
 
         .go-to-top-btn:hover {
-            background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
+            background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
             box-shadow: 0 6px 16px rgba(148, 137, 121, 0.4);
             transform: translateY(-3px);
         }

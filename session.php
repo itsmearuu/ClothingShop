@@ -1,29 +1,40 @@
 <?php
-// Central session handling: start session, inactivity timeout, helpers
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// session.php
+
+function isLoggedIn() {
+    return isset($_SESSION['user_id']) && isset($_SESSION['user_email']);
 }
 
-$inactive = 30 * 60; // 30 minutes inactivity timeout
-if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $inactive)) {
-    // timeout: clear session
-    session_unset();
-    session_destroy();
-    session_start();
-    $_SESSION['timeout_message'] = 'Session timed out due to inactivity.';
-}
-$_SESSION['last_activity'] = time();
-
-function isLoggedIn(){
-    return !empty($_SESSION['user_id']);
+function requireLogin() {
+    if (!isLoggedIn()) {
+        header('Location: login.php');
+        exit();
+    }
 }
 
-function requireLogin($redirect = true){
-    if (!isLoggedIn()){
-        if ($redirect){ header('Location: login.php'); exit(); }
+function isAdmin() {
+    return isLoggedIn() && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+}
+
+function requireAdmin() {
+    if (!isAdmin()) {
+        header('Location: ../index.php');
+        exit();
+    }
+}
+
+// Function to check if user can edit profile
+function canEditProfile($profileUserId) {
+    if (!isLoggedIn()) {
         return false;
     }
-    return true;
+    
+    // Admins can edit any profile
+    if (isAdmin()) {
+        return true;
+    }
+    
+    // Users can only edit their own profile
+    return $_SESSION['user_id'] == $profileUserId;
 }
-
 ?>

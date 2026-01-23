@@ -38,25 +38,22 @@ if (file_exists($jsonFile)) {
 
         <div class="mylogo" onclick="window.location.href='index.php'">CLOTHING<span style="color: #ff9d00">SHOP</span></div>
         <nav>
-            <a href="index.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'index.php') ? 'active' : ''; ?>">HOME</a>
-            <a href="about.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'about.php') ? 'active' : ''; ?>">ABOUT</a>
-            <a href="products.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'products.php') ? 'active' : ''; ?>">PRODUCTS</a>
-            <a href="contact.php" class="<?php echo (basename($_SERVER['PHP_SELF']) === 'contact.php') ? 'active' : ''; ?>">CONTACT</a>
+            <a href="index.php">HOME</a>
+            <a href="about.php">ABOUT</a>
+            <a href="products.php">PRODUCTS</a>
+            <a href="contact.php">CONTACT</a>
         </nav>
 
         <div class="logsign">
-    <?php require_once 'session.php'; ?>
-    <?php if(isLoggedIn()): ?>
-        <a href="profile.php"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?></a>
-        <?php if(isAdmin()): ?>
-            <a href="admin/index.php"><i class="fas fa-tachometer-alt"></i> Admin</a>
-        <?php endif; ?>
-        <a href="logout.php">Logout</a>
-    <?php else: ?>
-        <a href="login.php"><i class="fa-jelly-fill fa-regular fa-user"></i></a>
-    <?php endif; ?>
-    <a href="cart.php" id="cart-link"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
-</div>
+            <?php require_once 'session.php'; ?>
+            <?php if(isLoggedIn()): ?>
+                <a href="profile.php"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?></a>
+                <a href="logout.php">Logout</a>
+            <?php else: ?>
+                <a href="login.php"><i class="fa-jelly-fill fa-regular fa-user"></i></a>
+            <?php endif; ?>
+            <a href="cart.php" id="cart-link"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
+        </div>
 
     </header>
 
@@ -70,7 +67,7 @@ if (file_exists($jsonFile)) {
                     <img src="images/clo123.avif" class="d-block w-100" alt="Fashion Collection">
                     <div class="carousel-overlay"></div>
                     <div class="carousel-caption-container">
-                        <h2 class="carousel-main-title">Welcome to Clothing<span style="color: #ff9d00">Shop</span></h2>
+                        <h2 class="carousel-main-title">Welcome to ClothingShop</h2>
                         <p class="carousel-subtitle">Discover the latest trends in fashion and style</p>
                         <a href="products.php" class="carousel-btn">Shop Now</a>
                     </div>
@@ -181,7 +178,7 @@ if (file_exists($jsonFile)) {
         <div class="container">
             <div class="row">
                 <div class="col">
-                    <p class="Clo">CLOTHING<span style="color: #ff9d00">SHOP</span></p>
+                    <p class="Clo">CLOTHINGSHOP</p>
                     <p>Empowering customers with choice, confidence, and convenience—ClothingShop is your trusted destination for modern online shopping.</p>
                 </div>
                 <div class="col">
@@ -196,7 +193,8 @@ if (file_exists($jsonFile)) {
                 </div>
                 <div class="col">
                     <p class="Git">GET IN TOUCH</p>
-                    <p>+63 902 6488 930 <br> +63 915 6789 012 <br>contact@clothingshop.com<br>support@clothingshop.com</p>
+                    <p>+63 902 6488 930</p>
+                    <p>contact@ClothingShop.com</p>
                 </div>
             </div>
         </div>
@@ -219,7 +217,7 @@ if (file_exists($jsonFile)) {
             right: 30px;
             width: 50px;
             height: 50px;
-            background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
+            background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
             color: #222831;
             border: none;
             border-radius: 50%;
@@ -233,7 +231,7 @@ if (file_exists($jsonFile)) {
         }
 
         .go-to-top-btn:hover {
-            background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
+            background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
             box-shadow: 0 6px 16px rgba(148, 137, 121, 0.4);
             transform: translateY(-3px);
         }

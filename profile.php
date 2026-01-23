@@ -1,201 +1,145 @@
 <?php
-/**
- * USER PROFILE PAGE - profile.php
- * Allows users to view and edit their profile information
- * Features:
- * - View current profile data
- * - Edit personal information (first name, last name, middle name, email, birthday, gender)
- * - Change password
- * - Upload/change profile picture
- */
-
-require_once 'session.php';
+// profile.php
+session_start();
 require_once 'config.php';
+require_once 'session.php';
 
-// Check if user is logged in
-if (!isLoggedIn()) {
-    header('Location: login.php');
-    exit();
-}
+requireLogin();
 
-$user_id = $_SESSION['user_id'];
-$success_message = '';
-$error_message = '';
+// Get profile user ID (either from URL for admin, or current user)
+$profileUserId = isset($_GET['user_id']) && isAdmin() ? intval($_GET['user_id']) : $_SESSION['user_id'];
 
-// Fetch current user data
-$query = "SELECT * FROM users WHERE id = ?";
-$stmt = $conn->prepare($query);
-$stmt->bind_param("i", $user_id);
+// Check if user can edit this profile
+$canEdit = canEditProfile($profileUserId);
+
+// Get user data
+$stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->bind_param("i", $profileUserId);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 
-/**
- * PROFILE UPDATE HANDLER
- * Processes profile form submission
- * Updates user credentials in database
- */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
-    $firstName = trim($_POST['firstName'] ?? '');
-    $lastName = trim($_POST['lastName'] ?? '');
-    $middleName = trim($_POST['middleName'] ?? '');
-    $birthday = trim($_POST['birthday'] ?? '');
-    $gender = trim($_POST['gender'] ?? '');
-    
-    // Validate required fields
-    if (empty($firstName) || empty($lastName)) {
-        $error_message = "First name and last name are required.";
-    } else {
-        // Update user profile
-        $updateQuery = "UPDATE users SET firstName = ?, lastName = ?, middleName = ?, birthday = ?, gender = ? WHERE id = ?";
-        $updateStmt = $conn->prepare($updateQuery);
-        $updateStmt->bind_param("sssssi", $firstName, $lastName, $middleName, $birthday, $gender, $user_id);
-        
-        if ($updateStmt->execute()) {
-            $success_message = "Profile updated successfully!";
-            // Update session user name
-            $_SESSION['user_name'] = $firstName . ' ' . $lastName;
-            // Refresh user data
-            $user['firstName'] = $firstName;
-            $user['lastName'] = $lastName;
-            $user['middleName'] = $middleName;
-            $user['birthday'] = $birthday;
-            $user['gender'] = $gender;
-        } else {
-            $error_message = "Error updating profile. Please try again.";
-        }
-    }
+if (!$user) {
+    header('Location: index.php');
+    exit();
 }
 
-/**
- * PASSWORD CHANGE HANDLER
- * Processes password change request
- */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
-    $currentPassword = $_POST['current_password'] ?? '';
-    $newPassword = $_POST['new_password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
+// Handle profile update
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
+    $firstName = $conn->real_escape_string($_POST['firstName']);
+    $lastName = $conn->real_escape_string($_POST['lastName']);
+    $middleName = $conn->real_escape_string($_POST['middleName']);
+    $birthday = $conn->real_escape_string($_POST['birthday']);
+    $gender = $conn->real_escape_string($_POST['gender']);
     
-    // Verify current password
-    if (!password_verify($currentPassword, $user['password'])) {
-        $error_message = "Current password is incorrect.";
-    } elseif (empty($newPassword)) {
-        $error_message = "New password cannot be empty.";
-    } elseif ($newPassword !== $confirmPassword) {
-        $error_message = "New passwords do not match.";
-    } elseif (strlen($newPassword) < 6) {
-        $error_message = "New password must be at least 6 characters long.";
-    } else {
-        // Hash and update password
-        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $passwordQuery = "UPDATE users SET password = ? WHERE id = ?";
-        $passwordStmt = $conn->prepare($passwordQuery);
-        $passwordStmt->bind_param("si", $hashedPassword, $user_id);
-        
-        if ($passwordStmt->execute()) {
-            $success_message = "Password changed successfully!";
-        } else {
-            $error_message = "Error changing password. Please try again.";
-        }
-    }
-}
-
-/**
- * PROFILE PICTURE UPLOAD HANDLER
- * Processes profile picture upload
- * Validates file type and size
- */
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) {
-    $file = $_FILES['profile_picture'];
-    $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    $maxFileSize = 5 * 1024 * 1024; // 5MB
-    $uploadDir = 'uploads/profile_pictures/';
-    
-    // Create upload directory if it doesn't exist
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
-    }
-    
-    // Validate file
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $error_message = "File upload error.";
-    } elseif (!in_array($file['type'], $allowedTypes)) {
-        $error_message = "Only image files (JPEG, PNG, GIF, WebP) are allowed.";
-    } elseif ($file['size'] > $maxFileSize) {
-        $error_message = "File size must not exceed 5MB.";
-    } else {
-        // Generate unique filename
-        $fileExtension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $filename = $user_id . '_' . time() . '.' . $fileExtension;
-        $filePath = $uploadDir . $filename;
-        
-        // Delete old profile picture if exists
-        if (!empty($user['profile_picture']) && file_exists($user['profile_picture'])) {
-            unlink($user['profile_picture']);
+    // Handle profile picture upload
+    if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === 0) {
+        $uploadDir = 'uploads/profile_pictures/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
         }
         
-        // Move uploaded file
-        if (move_uploaded_file($file['tmp_name'], $filePath)) {
-            // Update database with new profile picture path
-            $pictureQuery = "UPDATE users SET profile_picture = ? WHERE id = ?";
-            $pictureStmt = $conn->prepare($pictureQuery);
-            $pictureStmt->bind_param("si", $filePath, $user_id);
+        $fileExt = strtolower(pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION));
+        $allowedExts = ['jpg', 'jpeg', 'png', 'gif'];
+        
+        if (in_array($fileExt, $allowedExts)) {
+            $fileName = $profileUserId . '_' . time() . '.' . $fileExt;
+            $targetPath = $uploadDir . $fileName;
             
-            if ($pictureStmt->execute()) {
-                $success_message = "Profile picture updated successfully!";
-                $user['profile_picture'] = $filePath;
+            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $targetPath)) {
+                // Delete old profile picture
+                if ($user['profile_picture'] && file_exists($user['profile_picture'])) {
+                    unlink($user['profile_picture']);
+                }
+                
+                $profilePicture = $targetPath;
+                $stmt = $conn->prepare("UPDATE users SET profile_picture = ? WHERE id = ?");
+                $stmt->bind_param("si", $profilePicture, $profileUserId);
+                $stmt->execute();
+            }
+        }
+    }
+    
+    // Update user info
+    $stmt = $conn->prepare("UPDATE users SET firstName = ?, lastName = ?, middleName = ?, birthday = ?, gender = ? WHERE id = ?");
+    $stmt->bind_param("sssssi", $firstName, $lastName, $middleName, $birthday, $gender, $profileUserId);
+    
+    if ($stmt->execute()) {
+        // Update session if editing own profile
+        if ($profileUserId == $_SESSION['user_id']) {
+            $_SESSION['user_name'] = $firstName;
+        }
+        $success = "Profile updated successfully!";
+        
+        // Refresh user data
+        $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->bind_param("i", $profileUserId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = $result->fetch_assoc();
+    } else {
+        $error = "Error updating profile.";
+    }
+}
+
+// Handle password change
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password']) && $canEdit) {
+    $currentPassword = $_POST['current_password'];
+    $newPassword = $_POST['new_password'];
+    $confirmPassword = $_POST['confirm_password'];
+    
+    if (password_verify($currentPassword, $user['password'])) {
+        if ($newPassword === $confirmPassword) {
+            if (strlen($newPassword) >= 6) {
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+                $stmt->bind_param("si", $hashedPassword, $profileUserId);
+                
+                if ($stmt->execute()) {
+                    $passwordSuccess = "Password changed successfully!";
+                } else {
+                    $passwordError = "Error changing password.";
+                }
             } else {
-                $error_message = "Error saving profile picture. Please try again.";
-                unlink($filePath);
+                $passwordError = "Password must be at least 6 characters.";
             }
         } else {
-            $error_message = "Error uploading file. Please try again.";
+            $passwordError = "Passwords do not match.";
         }
+    } else {
+        $passwordError = "Current password is incorrect.";
     }
 }
-
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile - ClothingShop</title>
-    
-    <!-- Fonts & icons -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Oswald:wght@200..700&family=Poppins:wght@400;500;800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <title>Profile - ClothingShop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
-    
     <style>
-        body {
-            background-color: #222831;
-            color: #DFD0B8;
-        }
-        
         .profile-container {
             max-width: 900px;
             margin: 40px auto;
-            padding: 20px;
-        }
-        
-        .profile-container h1 {
-            color: #DFD0B8;
+            padding: 0 20px;
         }
         
         .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: #393E46;
+            background: linear-gradient(135deg, #393E46 0%, #222831 100%);
+            padding: 40px;
             border-radius: 10px;
-            border: 1px solid #4a5159;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .profile-picture-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
         }
         
         .profile-picture {
@@ -203,285 +147,304 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['profile_picture'])) 
             height: 150px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid #948979;
+            border: 4px solid #948979;
         }
         
-        .profile-info h2 {
-            margin-bottom: 10px;
-            color: #DFD0B8;
+        .no-profile-picture {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #2c3137;
+            border: 4px solid #948979;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #948979;
         }
         
-        .profile-info p {
-            margin: 5px 0;
-            color: #b5a89a;
-        }
-        
-        .form-section {
+        .profile-info {
             background: #393E46;
             padding: 30px;
             border-radius: 10px;
-            margin-bottom: 30px;
             border: 1px solid #4a5159;
-        }
-        
-        .form-section h3 {
-            margin-bottom: 20px;
-            color: #DFD0B8;
-            border-bottom: 2px solid #948979;
-            padding-bottom: 10px;
-        }
-        
-        .form-group {
             margin-bottom: 20px;
         }
         
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
+        .profile-info h3 {
+            color: #948979;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid #4a5159;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
             font-weight: 600;
+            color: #948979;
+            width: 150px;
+        }
+        
+        .info-value {
             color: #DFD0B8;
+            flex: 1;
         }
         
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #4a5159;
-            border-radius: 5px;
-            font-size: 14px;
-            background-color: #2c3137;
-            color: #DFD0B8;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #948979;
-            box-shadow: 0 0 5px rgba(148, 137, 121, 0.3);
-        }
-        
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        
-        .form-row.full {
-            grid-template-columns: 1fr;
-        }
-        
-        .btn-submit {
-            background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
-            color: #222831;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        .admin-badge {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
             font-weight: 600;
-            transition: background 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            margin-top: 10px;
         }
         
-        .btn-submit:hover {
-            background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
+        .edit-permission-notice {
+            background: rgba(148, 137, 121, 0.1);
+            border-left: 4px solid #948979;
+            padding: 15px 20px;
+            border-radius: 6px;
             margin-bottom: 20px;
+            color: #948979;
         }
         
-        .alert-success {
-            background-color: rgba(40, 167, 69, 0.2);
-            color: #28a745;
-            border: 1px solid #28a745;
-        }
-        
-        .alert-error {
-            background-color: rgba(220, 53, 69, 0.2);
-            color: #dc3545;
-            border: 1px solid #dc3545;
-        }
-        
-        .picture-upload-area {
-            border: 2px dashed #4a5159;
-            border-radius: 5px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.3s;
-            background-color: rgba(148, 137, 121, 0.05);
-            color: #DFD0B8;
-        }
-        
-        .picture-upload-area:hover {
-            border-color: #948979;
-            background-color: rgba(148, 137, 121, 0.1);
-        }
-        
-        .picture-upload-area input {
-            display: none;
+        .edit-permission-notice i {
+            margin-right: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- HEADER -->
     <header>
-        <div class="mylogo">CLOTHINGSHOP</div>
+        <div class="mylogo" onclick="window.location.href='index.php'">CLOTHINGSHOP</div>
         <nav>
             <a href="index.php">HOME</a>
-            <a href="products.php">PRODUCTS</a>
             <a href="about.php">ABOUT</a>
+            <a href="products.php">PRODUCTS</a>
             <a href="contact.php">CONTACT</a>
         </nav>
-        
+
         <div class="logsign">
             <?php if(isLoggedIn()): ?>
                 <a href="profile.php"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?></a>
+                <?php if(isAdmin()): ?>
+                    <a href="admin/index.php"><i class="fas fa-tachometer-alt"></i> Admin</a>
+                <?php endif; ?>
                 <a href="logout.php">Logout</a>
             <?php else: ?>
                 <a href="login.php"><i class="fa-regular fa-user"></i></a>
             <?php endif; ?>
-            <a href="cart.php" id="cart-link"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
+            <a href="cart.php"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
         </div>
     </header>
 
     <div class="profile-container">
-        <h1>My Profile</h1>
-        
-        <!-- Success/Error Messages -->
-        <?php if (!empty($success_message)): ?>
-            <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
+        <?php if (isAdmin() && $profileUserId != $_SESSION['user_id']): ?>
+            <div class="edit-permission-notice">
+                <i class="fas fa-user-shield"></i>
+                <strong>Admin Mode:</strong> You are editing another user's profile.
+                <a href="admin/users.php" class="btn btn-sm btn-secondary ms-3">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </a>
+            </div>
         <?php endif; ?>
-        
-        <?php if (!empty($error_message)): ?>
-            <div class="alert alert-error"><?php echo htmlspecialchars($error_message); ?></div>
+
+        <?php if (!$canEdit): ?>
+            <div class="alert alert-warning">
+                <i class="fas fa-lock"></i> You don't have permission to edit this profile.
+            </div>
         <?php endif; ?>
-        
-        <!-- Profile Header with Picture -->
+
         <div class="profile-header">
-            <div>
-                <?php
-                $profilePic = !empty($user['profile_picture']) && file_exists($user['profile_picture']) 
-                    ? $user['profile_picture'] 
-                    : 'https://via.placeholder.com/150';
-                ?>
-                <img src="<?php echo htmlspecialchars($profilePic); ?>" alt="Profile Picture" class="profile-picture">
+            <div class="profile-picture-container">
+                <?php if ($user['profile_picture']): ?>
+                    <img src="<?php echo htmlspecialchars($user['profile_picture']); ?>" alt="Profile Picture" class="profile-picture">
+                <?php else: ?>
+                    <div class="no-profile-picture">
+                        <i class="fas fa-user"></i>
+                    </div>
+                <?php endif; ?>
             </div>
+            <h2 style="color: #DFD0B8; margin-bottom: 10px;">
+                <?php echo htmlspecialchars($user['firstName'] . ' ' . $user['lastName']); ?>
+            </h2>
+            <p style="color: #948979; margin-bottom: 10px;"><?php echo htmlspecialchars($user['email']); ?></p>
+            <?php if ($user['role'] === 'admin'): ?>
+                <span class="admin-badge">
+                    <i class="fas fa-crown"></i> ADMINISTRATOR
+                </span>
+            <?php endif; ?>
+        </div>
+
+        <?php if (isset($success)): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle"></i> <?php echo $success; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (isset($error)): ?>
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle"></i> <?php echo $error; ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Profile Information -->
+        <div class="profile-info">
+            <h3><i class="fas fa-user-circle"></i> Profile Information</h3>
+            
+            <?php if ($canEdit): ?>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" style="color: #948979; font-weight: 600;">First Name</label>
+                            <input type="text" class="form-control" name="firstName" value="<?php echo htmlspecialchars($user['firstName']); ?>" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" style="color: #948979; font-weight: 600;">Middle Name</label>
+                            <input type="text" class="form-control" name="middleName" value="<?php echo htmlspecialchars($user['middleName']); ?>">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label" style="color: #948979; font-weight: 600;">Last Name</label>
+                            <input type="text" class="form-control" name="lastName" value="<?php echo htmlspecialchars($user['lastName']); ?>" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" style="color: #948979; font-weight: 600;">Birthday</label>
+                            <input type="date" class="form-control" name="birthday" value="<?php echo $user['birthday']; ?>" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label" style="color: #948979; font-weight: 600;">Gender</label>
+                            <select class="form-control" name="gender" required>
+                                <option value="Male" <?php echo $user['gender'] === 'Male' ? 'selected' : ''; ?>>Male</option>
+                                <option value="Female" <?php echo $user['gender'] === 'Female' ? 'selected' : ''; ?>>Female</option>
+                                <option value="Other" <?php echo $user['gender'] === 'Other' ? 'selected' : ''; ?>>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #948979; font-weight: 600;">Profile Picture</label>
+                        <input type="file" class="form-control" name="profile_picture" accept="image/*">
+                        <small class="text-muted">Leave empty to keep current picture</small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update Profile
+                    </button>
+                </form>
+            <?php else: ?>
+                <div class="info-row">
+                    <div class="info-label">First Name:</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['firstName']); ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Middle Name:</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['middleName']); ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Last Name:</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['lastName']); ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Birthday:</div>
+                    <div class="info-value"><?php echo date('F d, Y', strtotime($user['birthday'])); ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Gender:</div>
+                    <div class="info-value"><?php echo htmlspecialchars($user['gender']); ?></div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Change Password -->
+        <?php if ($canEdit): ?>
             <div class="profile-info">
-                <h2><?php echo htmlspecialchars($user['firstName'] . ' ' . $user['lastName']); ?></h2>
-                <p><strong>Email:</strong> <?php echo htmlspecialchars($user['email']); ?></p>
-                <p><strong>Member Since:</strong> <?php echo date('F d, Y', strtotime($user['createdAt'])); ?></p>
-                <p><strong>Birthday:</strong> <?php echo !empty($user['birthday']) ? date('F d', strtotime($user['birthday'])) : 'Not set'; ?></p>
+                <h3><i class="fas fa-lock"></i> Change Password</h3>
+                
+                <?php if (isset($passwordSuccess)): ?>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle"></i> <?php echo $passwordSuccess; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($passwordError)): ?>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-circle"></i> <?php echo $passwordError; ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <?php endif; ?>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #948979; font-weight: 600;">Current Password</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #948979; font-weight: 600;">New Password</label>
+                        <input type="password" class="form-control" name="new_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color: #948979; font-weight: 600;">Confirm New Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                    <button type="submit" name="change_password" class="btn btn-primary">
+                        <i class="fas fa-key"></i> Change Password
+                    </button>
+                </form>
+            </div>
+        <?php endif; ?>
+
+        <!-- Account Details -->
+        <div class="profile-info">
+            <h3><i class="fas fa-info-circle"></i> Account Details</h3>
+            <div class="info-row">
+                <div class="info-label">Account Type:</div>
+                <div class="info-value">
+                    <span class="badge bg-<?php echo $user['role'] === 'admin' ? 'danger' : 'primary'; ?>">
+                        <?php echo ucfirst($user['role']); ?>
+                    </span>
+                </div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Member Since:</div>
+                <div class="info-value"><?php echo date('F d, Y', strtotime($user['createdAt'])); ?></div>
             </div>
         </div>
-
-        <!-- Profile Picture Upload Section -->
-        <div class="form-section">
-            <h3>Profile Picture</h3>
-            <form method="POST" enctype="multipart/form-data">
-                <div class="picture-upload-area" onclick="document.getElementById('pictureInput').click();">
-                    <i class="fas fa-cloud-upload-alt" style="font-size: 30px; color: #948979; margin-bottom: 10px; display: block;"></i>
-                    <p><strong>Click to upload or drag and drop</strong></p>
-                    <p style="color: #666; font-size: 12px;">PNG, JPG, GIF or WebP (Max 5MB)</p>
-                    <input type="file" id="pictureInput" name="profile_picture" accept="image/*" onchange="this.form.submit();">
-                </div>
-            </form>
-        </div>
-
-        <!-- Edit Profile Section -->
-        <div class="form-section">
-            <h3>Personal Information</h3>
-            <form method="POST">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="firstName">First Name</label>
-                        <input type="text" id="firstName" name="firstName" value="<?php echo htmlspecialchars($user['firstName']); ?>" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="lastName">Last Name</label>
-                        <input type="text" id="lastName" name="lastName" value="<?php echo htmlspecialchars($user['lastName']); ?>" required>
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="middleName">Middle Name (Optional)</label>
-                    <input type="text" id="middleName" name="middleName" value="<?php echo htmlspecialchars($user['middleName'] ?? ''); ?>">
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="birthday">Birthday</label>
-                        <input type="date" id="birthday" name="birthday" value="<?php echo htmlspecialchars($user['birthday'] ?? ''); ?>">
-                    </div>
-                    <div class="form-group">
-                        <label for="gender">Gender</label>
-                        <select id="gender" name="gender">
-                            <option value="">--Select Gender--</option>
-                            <option value="Male" <?php echo ($user['gender'] === 'Male') ? 'selected' : ''; ?>>Male</option>
-                            <option value="Female" <?php echo ($user['gender'] === 'Female') ? 'selected' : ''; ?>>Female</option>
-                            <option value="Other" <?php echo ($user['gender'] === 'Other') ? 'selected' : ''; ?>>Other</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button type="submit" name="update_profile" class="btn-submit">Update Profile</button>
-            </form>
-        </div>
-
-        <!-- Change Password Section -->
-        <div class="form-section">
-            <h3>Change Password</h3>
-            <form method="POST">
-                <div class="form-group">
-                    <label for="current_password">Current Password</label>
-                    <input type="password" id="current_password" name="current_password" required>
-                </div>
-                
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="new_password">New Password</label>
-                        <input type="password" id="new_password" name="new_password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password">Confirm New Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" required>
-                    </div>
-                </div>
-                
-                <button type="submit" name="change_password" class="btn-submit">Change Password</button>
-            </form>
-        </div>
-
-        <!-- Back to Home -->
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="index.php" style="color: #948979; text-decoration: none; font-weight: 600;">
-                <i class="fas fa-arrow-left"></i> Back to Home
-            </a>
-        </div>
+        <div class="profile-info">
+    <h3><i class="fas fa-shopping-bag"></i> My Orders</h3>
+    <p style="color: #948979; margin-bottom: 20px;">
+        View and track all your orders
+    </p>
+    <a href="my_orders.php" class="btn btn-primary">
+        <i class="fas fa-list"></i> View My Orders
+    </a>
+</div>
     </div>
 
-    <!-- FOOTER -->
     <footer>
         <div class="container">
             <div class="row">
                 <div class="col">
                     <p class="Clo">CLOTHINGSHOP</p>
                     <p>Empowering customers with choice, confidence, and convenience—ClothingShop is your trusted destination for modern online shopping.</p>
-                </div>
-                <div class="col">
-                    <p class="Com">COMPANY</p>
-                    <div class="footer-links">
-                        <a href="index.php">HOME</a>
-                        <a href="products.php">PRODUCTS</a>
-                        <a href="about.php">ABOUT</a>
-                        <a href="contact.php">CONTACT</a>
-                    </div>
-                </div>
-                <div class="col">
-                    <p class="Git">GET IN TOUCH</p>
-                    <p>+63 902 6488 930</p>
-                    <p>contact@ClothingShop.com</p>
                 </div>
             </div>
         </div>

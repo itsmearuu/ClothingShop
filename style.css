@@ -46,6 +46,13 @@ nav a:hover{
     color: #948979;
 }
 
+nav a.active{
+    color: #ff9d00;
+    text-decoration: underline;
+    text-underline-offset: 5px;
+    font-weight: bold;
+}
+
 header .logsign{
     display: flex;
     gap: 20px;
@@ -134,7 +141,7 @@ header .logsign{
 
 .carousel-btn{
     display: inline-block;
-    background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+    background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
     color: #222831;
     padding: 14px 40px;
     border-radius: 8px;
@@ -147,7 +154,7 @@ header .logsign{
 }
 
 .carousel-btn:hover{
-    background: linear-gradient(135deg, #7a6e60 0%, #948979 100%);
+    background: linear-gradient(135deg, #ffe2c2 0%, #948979 100%);
     transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(148, 137, 121, 0.3);
     color: #222831;
@@ -543,7 +550,7 @@ footer .col .footer-links a:hover{
     flex: 1;
 }
 .btn-search{
-    background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+    background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
     border: none;
     color: #222831;
     padding: 10px 15px;
@@ -553,7 +560,7 @@ footer .col .footer-links a:hover{
     font-weight: bold;
 }
 .btn-search:hover{
-    background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
+    background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
 }
 
 .sort-form select{
@@ -637,7 +644,7 @@ footer .col .footer-links a:hover{
 }
 .btn-view-details{
     width: 100%;
-    background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+    background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
     color: #222831;
     border: none;
     padding: 10px;
@@ -648,7 +655,7 @@ footer .col .footer-links a:hover{
     font-weight: bold;
 }
 .btn-view-details:hover{
-    background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
+    background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
 }
 
 .card.product-card:hover{
@@ -900,13 +907,13 @@ footer .col .footer-links a:hover{
     margin-bottom: 30px;
 }
 .cta-section .btn{
-    background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+    background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
     color: #222831;
     font-weight: bold;
     transition: all 0.3s ease;
 }
 .cta-section .btn:hover{
-    background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
+    background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
     transform: scale(1.05);
 }
 
@@ -1032,7 +1039,7 @@ footer .col .footer-links a:hover{
 }
 
 .btn-submit{
-    background: linear-gradient(135deg, #948979 0%, #7a6e60 100%);
+    background: linear-gradient(135deg, #ff9900 0%, #7a6e60 100%);
     color: #222831;
     border: none;
     padding: 12px 40px;
@@ -1044,7 +1051,7 @@ footer .col .footer-links a:hover{
     width: 100%;
 }
 .btn-submit:hover{
-    background: linear-gradient(135deg, #a39a8a 0%, #8a7d70 100%);
+    background: linear-gradient(135deg, #ffe2c2 0%, #8a7d70 100%);
     transform: translateY(-2px);
 }
 

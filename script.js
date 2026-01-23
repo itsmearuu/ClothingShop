@@ -87,3 +87,37 @@ document.addEventListener('DOMContentLoaded', function(){
     // initialize count on load
     updateCartCount();
 });
+
+// Function to ensure cart items have proper structure
+function normalizeCartItem(item, index) {
+    return {
+        id: item.id || index + 1,
+        name: item.name || item.title || 'Unknown Product',
+        title: item.name || item.title || 'Unknown Product',
+        price: parseFloat(item.price || 0),
+        img: item.img || item.image || '',
+        size: item.size || 'M',
+        qty: parseInt(item.qty || item.quantity || 1),
+        quantity: parseInt(item.qty || item.quantity || 1)
+    };
+}
+
+// Update cart normalization
+function normalizeCart() {
+    try {
+        const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+        const normalizedCart = cart.map((item, index) => normalizeCartItem(item, index));
+        localStorage.setItem('cart', JSON.stringify(normalizedCart));
+        return normalizedCart;
+    } catch(e) {
+        console.error('Error normalizing cart:', e);
+        return [];
+    }
+}
+
+// Run normalization on page load
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', function() {
+        normalizeCart();
+    });
+}

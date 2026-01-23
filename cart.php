@@ -1,3 +1,7 @@
+<?php
+session_start();
+require_once 'session.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -106,7 +110,7 @@
 <body>
     <?php require_once 'session.php'; ?>
     <header>
-        <div class="mylogo" onclick="window.location.href='index.php'">CLOTHINGSHOP</div>
+        <div class="mylogo" onclick="window.location.href='index.php'">CLOTHING<span style="color: #ff9d00">SHOP</span></div>
         <nav>
             <a href="index.php">HOME</a>
             <a href="about.php">ABOUT</a>
@@ -115,14 +119,18 @@
         </nav>
 
         <div class="logsign">
-            <?php if(isLoggedIn()): ?>
-                <a href="profile.php"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?></a>
-                <a href="logout.php">Logout</a>
-            <?php else: ?>
-                <a href="login.php"><i class="fa-jelly-fill fa-regular fa-user"></i></a>
-            <?php endif; ?>
-            <a href="cart.php" id="cart-link"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
-        </div>
+    <?php require_once 'session.php'; ?>
+    <?php if(isLoggedIn()): ?>
+        <a href="profile.php"><i class="fa-regular fa-user"></i> <?php echo htmlspecialchars($_SESSION['user_name']); ?></a>
+        <?php if(isAdmin()): ?>
+            <a href="admin/index.php"><i class="fas fa-tachometer-alt"></i> Admin</a>
+        <?php endif; ?>
+        <a href="logout.php">Logout</a>
+    <?php else: ?>
+        <a href="login.php"><i class="fa-jelly-fill fa-regular fa-user"></i></a>
+    <?php endif; ?>
+    <a href="cart.php" id="cart-link"><i class="fa-solid fa-cart-shopping"></i><span id="cart-count" class="cart-badge">0</span></a>
+</div>
     </header>
 
     <div class="container" style="margin-top:40px;margin-bottom:40px;">
@@ -138,7 +146,7 @@
             <p><small>Already have an account? Sign in below to continue shopping!</small></p>
             
             <div class="login-register-buttons">
-                <a href="login.php" class="btn-login">
+                <a href="login.php?redirect=checkout.php" class="btn-login">
                     <i class="fas fa-sign-in-alt"></i> Login to Your Account
                 </a>
             </div>
@@ -160,42 +168,22 @@
         
         <?php if(isLoggedIn()): ?>
         <div class="mt-4">
-            <a href="index.php" class="btn btn-secondary">Continue Shopping</a>
-            <button id="checkout-btn" class="btn btn-success ms-2">Checkout</button>
+            <a href="products.php" class="btn btn-secondary">Continue Shopping</a>
+            <button id="checkout-btn" class="btn btn-success ms-2">Proceed to Checkout</button>
         </div>
         <?php else: ?>
         <div class="mt-4">
-            <a href="index.php" class="btn btn-secondary">Continue Shopping</a>
+            <a href="products.php" class="btn btn-secondary">Continue Shopping</a>
             <button id="checkout-btn" class="btn btn-success ms-2" disabled style="opacity: 0.5; cursor: not-allowed;" title="Login required">Checkout (Login Required)</button>
         </div>
         <?php endif; ?>
     </div>
 
-        <!-- Checkout Modal -->
-        <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Checkout</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="checkout-items"></div>
-                        <h4 id="checkout-total" class="mt-3"></h4>
-                    </div>
-                    <div class="modal-footer">
-                        <button id="place-order-btn" class="btn btn-primary">Place Order</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
     <footer>
         <div class="container">
             <div class="row">
                 <div class="col">
-                    <p class="Clo">CLOTHINGSHOP</p>
+                    <p class="Clo">CLOTHING<span style="color: #ff9d00">SHOP</span></p>
                     <p>Empowering customers with choice, confidence, and convenience—ClothingShop is your trusted destination for modern online shopping.</p>
                 </div>
             </div>
@@ -230,7 +218,7 @@
                 total += subtotal;
                 tr.innerHTML = `
                     <td style="width:80px"><img src="${item.img}" style="width:70px;height:70px;object-fit:cover;border-radius:6px"/></td>
-                    <td>${item.title}</td>
+                    <td>${item.name || item.title}</td>
                     <td>${item.size || 'N/A'}</td>
                     <td>$${item.price}</td>
                     <td>
@@ -271,56 +259,28 @@
             }));
         }
 
-            render();
+        render();
 
-        // Checkout button and modal wiring
+        // Checkout button - redirect to checkout page
         const checkoutBtn = document.getElementById('checkout-btn');
-        const checkoutModalEl = document.getElementById('checkoutModal');
-        const bsCheckout = checkoutModalEl ? new bootstrap.Modal(checkoutModalEl) : null;
-        const checkoutItemsEl = document.getElementById('checkout-items');
-        const checkoutTotalEl = document.getElementById('checkout-total');
-        const placeOrderBtn = document.getElementById('place-order-btn');
-
-        function openCheckout(){
-            const cart = getCart();
-            if(!cart.length){ alert('Your cart is empty.'); return; }
-            
-            // Check if user is logged in (PHP sets this variable in the page)
-            const isLoggedIn = <?php echo isLoggedIn() ? 'true' : 'false'; ?>;
-            if(!isLoggedIn) {
-                alert('Please log in to your account before checking out.');
-                window.location.href = 'login.php';
-                return;
-            }
-            
-            checkoutItemsEl.innerHTML = '';
-            let total = 0;
-            cart.forEach(it =>{
-                const sub = (it.price||0) * (it.qty||1);
-                total += sub;
-                const div = document.createElement('div');
-                div.className = 'd-flex align-items-center gap-3 mb-2';
-                div.innerHTML = `<img src="${it.img}" style="width:60px;height:60px;object-fit:cover;border-radius:6px"/>
-                    <div>
-                      <div><strong>${it.title}</strong> <small class="text-muted">(${it.size||'N/A'})</small></div>
-                      <div>$${it.price} × ${it.qty} = $${sub.toFixed(2)}</div>
-                    </div>`;
-                checkoutItemsEl.appendChild(div);
-            });
-            checkoutTotalEl.textContent = 'Total: $' + total.toFixed(2);
-            if(bsCheckout) bsCheckout.show();
-        }
-
-        if(checkoutBtn) checkoutBtn.addEventListener('click', openCheckout);
-
-        if(placeOrderBtn){
-            placeOrderBtn.addEventListener('click', function(){
-                // simulate placing order
-                localStorage.removeItem('cart');
-                if(bsCheckout) bsCheckout.hide();
-                render();
-                updateCartCount();
-                alert('Order placed successfully — thank you!');
+        if(checkoutBtn){
+            checkoutBtn.addEventListener('click', function(){
+                const cart = getCart();
+                if(!cart.length){ 
+                    alert('Your cart is empty.'); 
+                    return; 
+                }
+                
+                // Check if user is logged in
+                const isLoggedIn = <?php echo isLoggedIn() ? 'true' : 'false'; ?>;
+                if(!isLoggedIn) {
+                    alert('Please log in to your account before checking out.');
+                    window.location.href = 'login.php?redirect=checkout.php';
+                    return;
+                }
+                
+                // Redirect to checkout page
+                window.location.href = 'checkout.php';
             });
         }
     });
